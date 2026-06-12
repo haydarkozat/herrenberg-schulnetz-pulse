@@ -3,6 +3,8 @@
 **Automatisierungs- & Überwachungspanel für 14 Schulstandorte**
 _Concept Demo für **#teamstadtherrenberg**_
 
+[![CI](https://github.com/haydarkozat/herrenberg-schulnetz-pulse/actions/workflows/ci.yml/badge.svg)](https://github.com/haydarkozat/herrenberg-schulnetz-pulse/actions/workflows/ci.yml)
+
 > Eine eigenständige FastAPI-Demo, die ein zentrales Monitoring- und Automatisierungs-Dashboard
 > für die Schulnetze der Stadt Herrenberg simuliert. Entwickelt als Konzept-Showcase für ein
 > Bewerbungsgespräch als **IT-Systemadministrator**.

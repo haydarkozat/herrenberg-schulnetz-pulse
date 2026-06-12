@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: Python Lint & Compile
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: pip install --no-cache-dir -r requirements.txt
+
+      - name: Syntax check (py_compile)
+        run: python -m py_compile main.py
+
+      - name: Import smoke test
+        run: python -c "import main; assert len(main.SCHOOLS_DATA) == 14, 'Es müssen 14 Standorte sein'; print('OK: 14 Schulstandorte geladen')"
+
+  docker:
+    name: Docker Build & Smoke Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: schulnetz-pulse:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run container
+        run: docker run -d --name schulnetz -p 8000:8000 schulnetz-pulse:ci
+
+      - name: Wait for app to become healthy
+        run: |
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/ || true)
+            if [ "$code" = "200" ]; then echo "App ist erreichbar (HTTP 200)"; exit 0; fi
+            echo "Warte auf App... ($i) [HTTP ${code:-000}]"
+            sleep 2
+          done
+          echo "App wurde nicht erreichbar"; docker logs schulnetz; exit 1
+
+      - name: Smoke test — GET /
+        run: |
+          html=$(curl -s http://127.0.0.1:8000/)
+          echo "$html" | grep -q "Herrenberg SchulNetz-Pulse" || { echo "Titel fehlt"; exit 1; }
+          echo "$html" | grep -q "#teamstadtherrenberg"        || { echo "Hashtag fehlt"; exit 1; }
+          echo "$html" | grep -q "Xurrent Ticket-Payload"      || { echo "Critical-Alarm fehlt"; exit 1; }
+          echo "GET / OK"
+
+      - name: Smoke test — POST /maintain (Warning -> Online)
+        run: |
+          out=$(curl -s -X POST http://127.0.0.1:8000/maintain)
+          echo "$out" | grep -q "(Updated)" || { echo "Firmware-Update fehlt"; exit 1; }
+          echo "POST /maintain OK"
+
+      - name: Smoke test — POST /sync-xurrent (Konsolen-Log)
+        run: |
+          curl -s -X POST http://127.0.0.1:8000/sync-xurrent >/dev/null
+          docker logs schulnetz 2>&1 | grep -q "XURRENT-SYNC" || { echo "Xurrent-Log fehlt"; exit 1; }
+          echo "POST /sync-xurrent OK"
+
+      - name: Teardown
+        if: always()
+        run: docker rm -f schulnetz || true
