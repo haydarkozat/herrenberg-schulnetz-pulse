@@ -27,7 +27,8 @@ jobs:
         run: python -m py_compile main.py
 
       - name: Import smoke test
-        run: python -c "import main; assert len(main.SCHOOLS_DATA) == 14, 'Es müssen 14 Standorte sein'; print('OK: 14 Schulstandorte geladen')"
+        run: |
+          python -c "import main; assert len(main.SCHOOLS_DATA) == 14, 'Es muessen 14 Standorte sein'; print('OK - 14 Schulstandorte geladen')"
 
   docker:
     name: Docker Build & Smoke Test
