@@ -73,6 +73,14 @@ pip install -r requirements.txt
 uvicorn main:app --reload
 ```
 
+### Fertiges Image aus der GitHub Container Registry (GHCR)
+
+Bei jedem Versions-Tag (`vX.Y.Z`) wird automatisch ein Image nach `ghcr.io` veröffentlicht:
+
+```bash
+docker run -p 8000:8000 ghcr.io/haydarkozat/herrenberg-schulnetz-pulse:latest
+```
+
 ## 🔌 API-Endpunkte
 
 | Methode | Pfad             | Beschreibung                                                        |
