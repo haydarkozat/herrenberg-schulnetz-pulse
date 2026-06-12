@@ -1,0 +1,12 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Zur Laufzeit generiertes Template
+index.html
+
+# OS
+.DS_Store
